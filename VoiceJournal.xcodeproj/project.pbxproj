@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4B0C19782E902CF8004127E8 /* ConfettiSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 4B0C19772E902CF8004127E8 /* ConfettiSwiftUI */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		4B07527F2E8F9ED700C43CC2 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -65,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4B0C19782E902CF8004127E8 /* ConfettiSwiftUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,6 +130,7 @@
 			);
 			name = VoiceJournal;
 			packageProductDependencies = (
+				4B0C19772E902CF8004127E8 /* ConfettiSwiftUI */,
 			);
 			productName = VoiceJournal;
 			productReference = 4B0752712E8F9ED400C43CC2 /* VoiceJournal.app */;
@@ -208,6 +214,9 @@
 			);
 			mainGroup = 4B0752682E8F9ED400C43CC2;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				4B0C19512E9029B4004127E8 /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4B0752722E8F9ED400C43CC2 /* Products */;
 			projectDirPath = "";
@@ -577,6 +586,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4B0C19512E9029B4004127E8 /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/simibac/ConfettiSwiftUI.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.3;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4B0C19772E902CF8004127E8 /* ConfettiSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4B0C19512E9029B4004127E8 /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */;
+			productName = ConfettiSwiftUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 4B0752692E8F9ED400C43CC2 /* Project object */;
 }

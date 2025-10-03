@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SwiftData
+import ConfettiSwiftUI
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
@@ -18,6 +19,7 @@ struct HomeView: View {
     @State private var selectedDate: Date = Date()
     @State private var currentTab: Int = 0
     private let rulerItemHeight: CGFloat = 90
+    @State private var confettiTrigger: Bool = false
     
     var body: some View {
         NavigationView {
@@ -62,7 +64,8 @@ struct HomeView: View {
                                         entries: viewModel.entriesForDate(selectedDate, in: notes),
                                         selectedDate: selectedDate,
                                         containerHeight: geo.size.height,
-                                        modelContext: modelContext
+                                        modelContext: modelContext,
+                                        streaks: streaks
                                     )
                                 }
                                 .padding(.horizontal, 8)
@@ -85,7 +88,8 @@ struct HomeView: View {
                                     entries: viewModel.entriesForDate(selectedDate, in: notes),
                                     selectedDate: selectedDate,
                                     containerHeight: geo.size.height,
-                                    modelContext: modelContext
+                                    modelContext: modelContext,
+                                    streaks: streaks
                                 )
                                 .padding(.horizontal, 20)
                             }
@@ -108,6 +112,10 @@ struct HomeView: View {
                     .opacity(currentTab == 0 ? 0 : 1)
                 }
             }
+        }
+        .confettiCannon(trigger: $confettiTrigger)
+        .onReceive(NotificationCenter.default.publisher(for: .journalSaved)) { _ in
+            withAnimation { confettiTrigger.toggle() }
         }
     }
 }
@@ -456,6 +464,7 @@ struct JournalCardsDisplayView: View {
     let selectedDate: Date
     let containerHeight: CGFloat
     let modelContext: ModelContext
+    let streaks: [Streak]
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -464,7 +473,7 @@ struct JournalCardsDisplayView: View {
             } else {
                 LazyVStack(spacing: 16) {
                     ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                        JournalCardView(entry: entry, index: index, modelContext: modelContext)
+                        JournalCardView(entry: entry, index: index, modelContext: modelContext, streaks: streaks)
                     }
                 }
                 .padding(.vertical, 16)
@@ -479,6 +488,7 @@ struct JournalCardView: View {
     let entry: JournalNote
     let index: Int
     let modelContext: ModelContext
+    let streaks: [Streak]
     @State private var isVisible = false
     @State private var offset: CGFloat = 0
     @State private var isSwiping = false
@@ -557,6 +567,9 @@ struct JournalCardView: View {
                             offset = -500
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 modelContext.delete(entry)
+                                if let streak =  streaks.first {
+                                    streak.numberOfEntries -= 1
+                                }
                                 try? modelContext.save()
                             }
                         } else {

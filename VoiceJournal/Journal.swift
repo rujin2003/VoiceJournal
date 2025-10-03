@@ -1,9 +1,11 @@
 import SwiftUI
+import SwiftData
 import AVFoundation
 
 
 struct JournalView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     
     @State private var isRecording = false
     @State private var speechRecognizer = SpeechRecognizer()
@@ -12,8 +14,10 @@ struct JournalView: View {
     
     @State private var showNotePreview = false
     @State private var preloadedAttributedString: NSAttributedString?
+    @State private var editedAttributedString: NSAttributedString?
     @State private var showEditor = false
     @State private var generatedTitle: String = ""
+    @State private var editedTitle: String = ""
     
     @State private var selectedMood: String = "😊"
     @State private var availableMoods: [String] = ["😊", "🤩", "🥰", "😐", "😢", "😠", "🤔", "😎"]
@@ -38,13 +42,17 @@ struct JournalView: View {
                         audioLevel: audioLevel
                     )
                 } else if showNotePreview, let content = preloadedAttributedString {
-                    NotePreviewView(title: generatedTitle, content: content, action: { showEditor = true })
+                    NotePreviewView(title: editedTitle.isEmpty ? generatedTitle : editedTitle, content: editedAttributedString as? NSAttributedString ?? content, action: { showEditor = true })
                     
                     MoodSelectorView(
                         moods: availableMoods,
                         selectedMood: $selectedMood,
                         showEmojiPicker: $showEmojiPicker
                     )
+                    
+                    SaveNewJournalButton(action: saveNewJournal)
+                        .disabled((editedAttributedString ?? preloadedAttributedString) == nil)
+                        .padding(.bottom, 6)
                     
                     DiscardButtonView(action: discardTranscription)
                         .padding(.bottom, 20)
@@ -76,13 +84,17 @@ struct JournalView: View {
             if let preloadedContent = preloadedAttributedString {
                 JournalNoteEditorView(
                     preloadedAttributedString: preloadedContent,
-                    title: generatedTitle,
+                    title: editedTitle.isEmpty ? generatedTitle : editedTitle,
                     mood: selectedMood,
                     onDismiss: {
                         showEditor = false
                     },
                     onSave: {
-                        discardTranscription()
+                        // No-op: saving handled in JournalView for creation flow
+                    },
+                    onUpdate: { updatedContent, updatedTitle in
+                        self.editedAttributedString = updatedContent
+                        self.editedTitle = updatedTitle
                     }
                 )
             }
@@ -127,12 +139,78 @@ struct JournalView: View {
         self.preloadedAttributedString = NSAttributedString(string: transcription, attributes: attributes)
         self.generatedTitle = extractTitleFromContent(transcription)
         self.showNotePreview = true
+        self.editedAttributedString = preloadedAttributedString
+        self.editedTitle = generatedTitle
     }
     
     private func discardTranscription() {
         transcription = ""
         preloadedAttributedString = nil
+        editedAttributedString = nil
+        editedTitle = ""
         showNotePreview = false
+    }
+
+    private func saveNewJournal() {
+        guard let content = (editedAttributedString ?? preloadedAttributedString) else { return }
+        let titleToUse = (editedTitle.isEmpty ? generatedTitle : editedTitle)
+        do {
+            let data = try NSKeyedArchiver.archivedData(withRootObject: content, requiringSecureCoding: false)
+            let dataString = data.base64EncodedString()
+
+            let newNote = JournalNote(
+                title: titleToUse.isEmpty ? extractTitleFromContent(content.string) : titleToUse,
+                noteContent: dataString,
+                mood: selectedMood,
+                colorString: Color.journalColors.randomElement()?.description ?? "vibrantPurple"
+            )
+            modelContext.insert(newNote)
+
+            // Update streak
+            try updateStreakAfterCreate()
+
+            try modelContext.save()
+
+            // Notify HomeView to show confetti
+            NotificationCenter.default.post(name: .journalSaved, object: nil)
+
+            // Reset and go back
+            discardTranscription()
+            dismiss()
+        } catch {
+            print("Error saving new journal: \(error)")
+        }
+    }
+
+    private func updateStreakAfterCreate() throws {
+        let streakFetchDescriptor = FetchDescriptor<Streak>()
+        var streaks = try modelContext.fetch(streakFetchDescriptor)
+        let streak: Streak
+        if let existing = streaks.first {
+            streak = existing
+        } else {
+            streak = Streak()
+            modelContext.insert(streak)
+            streaks.append(streak)
+        }
+        streak.numberOfEntries += 1
+
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        if let lastDate = streak.lastEntryDate {
+            let lastEntryDay = calendar.startOfDay(for: lastDate)
+            if !calendar.isDate(today, inSameDayAs: lastEntryDay) {
+                if let yesterday = calendar.date(byAdding: .day, value: -1, to: today), calendar.isDate(lastEntryDay, inSameDayAs: yesterday) {
+                    streak.currentStreak += 1
+                } else {
+                    streak.currentStreak = 1
+                }
+            }
+        } else {
+            streak.currentStreak = 1
+        }
+        streak.lastEntryDate = .now
+        if streak.currentStreak > streak.longestStreak { streak.longestStreak = streak.currentStreak }
     }
 }
 
@@ -369,6 +447,33 @@ struct DiscardButtonView: View {
                 Capsule()
                     .fill(Color.gray.opacity(0.15))
             )
+        }
+    }
+}
+
+struct SaveNewJournalButton: View {
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: "checkmark.circle.fill")
+                Text("Save Journal")
+            }
+            .font(.headline)
+            .fontWeight(.semibold)
+            .foregroundColor(.white)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.vibrantPurple, Color.vibrantPurple.opacity(0.8)]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(14)
+            .shadow(color: Color.vibrantPurple.opacity(0.3), radius: 8, y: 6)
         }
     }
 }

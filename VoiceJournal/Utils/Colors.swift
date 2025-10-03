@@ -43,3 +43,8 @@ extension Color {
         }
     }
 }
+
+import Foundation
+extension Notification.Name {
+    static let journalSaved = Notification.Name("journalSaved")
+}

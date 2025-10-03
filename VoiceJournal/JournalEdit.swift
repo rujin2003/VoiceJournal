@@ -110,6 +110,7 @@ struct JournalNoteEditorView: View {
     
     var onDismiss: () -> Void
     var onSave: () -> Void
+    var onUpdate: ((NSAttributedString, String) -> Void)? = nil
     
     init(note: JournalNote, onDismiss: @escaping () -> Void = {}, onSave: @escaping () -> Void = {}) {
         self.existingNote = note
@@ -129,13 +130,14 @@ struct JournalNoteEditorView: View {
         self._typingAttributes = State(initialValue: initialTypingAttributes)
     }
 
-    init(preloadedAttributedString: NSAttributedString, title: String, mood: String, onDismiss: @escaping () -> Void = {}, onSave: @escaping () -> Void = {}) {
+    init(preloadedAttributedString: NSAttributedString, title: String, mood: String, onDismiss: @escaping () -> Void = {}, onSave: @escaping () -> Void = {}, onUpdate: ((NSAttributedString, String) -> Void)? = nil) {
         self._attributedText = State(initialValue: NSMutableAttributedString(attributedString: preloadedAttributedString))
         self.existingNote = nil
         self.mood = mood
         self._noteTitle = State(initialValue: title)
         self.onDismiss = onDismiss
         self.onSave = onSave
+        self.onUpdate = onUpdate
         
         let initialColor = Color(uiColor: preloadedAttributedString.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor ?? .label)
         self._selectedColor = State(initialValue: initialColor)
@@ -283,6 +285,12 @@ struct JournalNoteEditorView: View {
             hasUnsavedChanges = true
             isEmpty = attributedText.string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
+        .onDisappear {
+            // For creation flow, pass back the latest content and title to parent
+            if existingNote == nil {
+                onUpdate?(attributedText, noteTitle)
+            }
+        }
         .navigationBarHidden(true)
         .animation(.easeInOut(duration: 0.3), value: showFontPicker)
         .animation(.easeInOut(duration: 0.3), value: showFontSizePicker)
@@ -306,23 +314,26 @@ struct JournalNoteEditorView: View {
                 .padding(.vertical, 10)
                
             
-            Button("Save") {
-                saveNote()
-            }
-            .font(.headline)
-            .fontWeight(.semibold)
-            .foregroundColor(.white)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.vibrantPurple, Color.vibrantPurple.opacity(0.8)]),
-                    startPoint: .leading,
-                    endPoint: .trailing
+            // Show Save only when editing an existing note
+            if existingNote != nil {
+                Button("Save") {
+                    saveNote()
+                }
+                .font(.headline)
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.vibrantPurple, Color.vibrantPurple.opacity(0.8)]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
                 )
-            )
-            .cornerRadius(12)
-            .shadow(color: Color.vibrantPurple.opacity(0.3), radius: 5, y: 3)
+                .cornerRadius(12)
+                .shadow(color: Color.vibrantPurple.opacity(0.3), radius: 5, y: 3)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
