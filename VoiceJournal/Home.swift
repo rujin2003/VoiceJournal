@@ -12,6 +12,7 @@ struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var viewModel = HomeViewModel()
     @Query(sort: \JournalNote.createdAt, order: .reverse) private var notes: [JournalNote]
+    @Query private var streaks: [Streak]
     
     @State private var selectedDate: Date = Date()
     private let rulerItemHeight: CGFloat = 90
@@ -38,9 +39,7 @@ struct HomeView: View {
                     .padding(.top, 20)
                         
                     StreakCardView(
-                        currentStreak: viewModel.currentStreak,
-                        longestStreak: viewModel.longestStreak,
-                        totalEntries: viewModel.totalEntries(from: notes)
+                        streak: streaks.first
                     )
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
@@ -74,17 +73,15 @@ struct HomeView: View {
 // MARK: - Subviews
 
 struct StreakCardView: View {
-    let currentStreak: Int
-    let longestStreak: Int
-    let totalEntries: Int
+    var streak: Streak?
     
     var body: some View {
         HStack(spacing: 10) {
-            StreakItemView(icon: "flame.fill", value: "\(currentStreak)", label: "Day Streak", color: .vibrantOrange, isLarge: true)
+            StreakItemView(icon: "flame.fill", value: "\(streak?.currentStreak ?? 0)", label: "Day Streak", color: .vibrantOrange, isLarge: true)
             
             VStack(spacing: 10) {
-                StreakItemView(icon: "star.fill", value: "\(longestStreak)", label: "Longest", color: .vibrantGold, isLarge: false)
-                StreakItemView(icon: "book.fill", value: "\(totalEntries)", label: "Entries", color: .vibrantTeal, isLarge: false)
+                StreakItemView(icon: "star.fill", value: "\(streak?.longestStreak ?? 0)", label: "Longest", color: .vibrantGold, isLarge: false)
+                StreakItemView(icon: "book.fill", value: "\(streak?.numberOfEntries ?? 0)", label: "Entries", color: .vibrantTeal, isLarge: false)
             }
         }
     }

@@ -129,6 +129,49 @@ struct JournalNoteEditorView: View {
         self._typingAttributes = State(initialValue: initialTypingAttributes)
     }
     
+    private func updateStreak() {
+        do {
+            let streakFetchDescriptor = FetchDescriptor<Streak>()
+            var streaks = try modelContext.fetch(streakFetchDescriptor)
+            
+            let streak: Streak
+            if let existingStreak = streaks.first {
+                streak = existingStreak
+            } else {
+                streak = Streak()
+                modelContext.insert(streak)
+                streaks.append(streak)
+            }
+            
+            streak.numberOfEntries += 1
+            
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: .now)
+            
+            if let lastDate = streak.lastEntryDate {
+                let lastEntryDay = calendar.startOfDay(for: lastDate)
+                if !calendar.isDate(today, inSameDayAs: lastEntryDay) {
+                    if let yesterday = calendar.date(byAdding: .day, value: -1, to: today), calendar.isDate(lastEntryDay, inSameDayAs: yesterday) {
+                        streak.currentStreak += 1
+                    } else {
+                        streak.currentStreak = 1
+                    }
+                }
+            } else {
+                streak.currentStreak = 1
+            }
+            
+            streak.lastEntryDate = .now
+            
+            if streak.currentStreak > streak.longestStreak {
+                streak.longestStreak = streak.currentStreak
+            }
+            
+        } catch {
+            print("Error updating streak: \(error)")
+        }
+    }
+    
     private func saveNote() {
         if noteTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             noteTitle = generateSmartTitle(from: attributedText.string)
@@ -151,6 +194,8 @@ struct JournalNoteEditorView: View {
                 )
                 modelContext.insert(newNote)
             }
+            
+            updateStreak()
 
             try modelContext.save()
             onSave()

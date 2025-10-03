@@ -14,6 +14,6 @@ struct VoiceJournalApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: JournalNote.self)
+        .modelContainer(for: [JournalNote.self, Streak.self])
     }
 }
