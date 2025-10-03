@@ -553,17 +553,19 @@ struct JournalCardView: View {
             }
         )
         .clipShape(RoundedRectangle(cornerRadius: 18))
-        .gesture(
-            DragGesture()
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 10)
                 .onChanged { gesture in
-                    if gesture.translation.width < 0 {
+                    let isHorizontal = abs(gesture.translation.width) > abs(gesture.translation.height)
+                    if isHorizontal && gesture.translation.width < 0 {
                         offset = gesture.translation.width
                         isSwiping = true
                     }
                 }
                 .onEnded { gesture in
+                    let isHorizontal = abs(gesture.translation.width) > abs(gesture.translation.height)
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        if gesture.translation.width < -100 {
+                        if isHorizontal && gesture.translation.width < -100 {
                             offset = -500
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 modelContext.delete(entry)
