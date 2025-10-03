@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		4B0C19782E902CF8004127E8 /* ConfettiSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 4B0C19772E902CF8004127E8 /* ConfettiSwiftUI */; };
+		4B0C19972E903C7F004127E8 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4B0C19962E903C7E004127E8 /* WidgetKit.framework */; };
+		4B0C19992E903C7F004127E8 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4B0C19982E903C7F004127E8 /* SwiftUI.framework */; };
+		4B0C19AA2E903C81004127E8 /* journalwidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4B0C19942E903C7E004127E8 /* journalwidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -25,12 +28,36 @@
 			remoteGlobalIDString = 4B0752702E8F9ED400C43CC2;
 			remoteInfo = VoiceJournal;
 		};
+		4B0C19A82E903C81004127E8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4B0752692E8F9ED400C43CC2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4B0C19932E903C7E004127E8;
+			remoteInfo = journalwidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		4B0C19AF2E903C81004127E8 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				4B0C19AA2E903C81004127E8 /* journalwidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		4B0752712E8F9ED400C43CC2 /* VoiceJournal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoiceJournal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4B07527E2E8F9ED700C43CC2 /* VoiceJournalTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoiceJournalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4B0752882E8F9ED700C43CC2 /* VoiceJournalUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoiceJournalUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4B0C19942E903C7E004127E8 /* journalwidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = journalwidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		4B0C19962E903C7E004127E8 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		4B0C19982E903C7F004127E8 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -38,6 +65,21 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+			);
+			target = 4B0752702E8F9ED400C43CC2 /* VoiceJournal */;
+		};
+		4B0C19AE2E903C81004127E8 /* Exceptions for "journalwidget" folder in "journalwidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4B0C19932E903C7E004127E8 /* journalwidgetExtension */;
+		};
+		4B0C19B32E904488004127E8 /* Exceptions for "journalwidget" folder in "VoiceJournal" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				LiveActivityManager.swift,
+				StreakActivityAttributes.swift,
 			);
 			target = 4B0752702E8F9ED400C43CC2 /* VoiceJournal */;
 		};
@@ -60,6 +102,15 @@
 		4B07528B2E8F9ED700C43CC2 /* VoiceJournalUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = VoiceJournalUITests;
+			sourceTree = "<group>";
+		};
+		4B0C199A2E903C7F004127E8 /* journalwidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4B0C19B32E904488004127E8 /* Exceptions for "journalwidget" folder in "VoiceJournal" target */,
+				4B0C19AE2E903C81004127E8 /* Exceptions for "journalwidget" folder in "journalwidgetExtension" target */,
+			);
+			path = journalwidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -87,6 +138,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4B0C19912E903C7E004127E8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4B0C19992E903C7F004127E8 /* SwiftUI.framework in Frameworks */,
+				4B0C19972E903C7F004127E8 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -96,6 +156,8 @@
 				4B0752732E8F9ED400C43CC2 /* VoiceJournal */,
 				4B0752812E8F9ED700C43CC2 /* VoiceJournalTests */,
 				4B07528B2E8F9ED700C43CC2 /* VoiceJournalUITests */,
+				4B0C199A2E903C7F004127E8 /* journalwidget */,
+				4B0C19952E903C7E004127E8 /* Frameworks */,
 				4B0752722E8F9ED400C43CC2 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -106,8 +168,18 @@
 				4B0752712E8F9ED400C43CC2 /* VoiceJournal.app */,
 				4B07527E2E8F9ED700C43CC2 /* VoiceJournalTests.xctest */,
 				4B0752882E8F9ED700C43CC2 /* VoiceJournalUITests.xctest */,
+				4B0C19942E903C7E004127E8 /* journalwidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		4B0C19952E903C7E004127E8 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				4B0C19962E903C7E004127E8 /* WidgetKit.framework */,
+				4B0C19982E903C7F004127E8 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -120,10 +192,12 @@
 				4B07526D2E8F9ED400C43CC2 /* Sources */,
 				4B07526E2E8F9ED400C43CC2 /* Frameworks */,
 				4B07526F2E8F9ED400C43CC2 /* Resources */,
+				4B0C19AF2E903C81004127E8 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				4B0C19A92E903C81004127E8 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				4B0752732E8F9ED400C43CC2 /* VoiceJournal */,
@@ -182,6 +256,28 @@
 			productReference = 4B0752882E8F9ED700C43CC2 /* VoiceJournalUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		4B0C19932E903C7E004127E8 /* journalwidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4B0C19AB2E903C81004127E8 /* Build configuration list for PBXNativeTarget "journalwidgetExtension" */;
+			buildPhases = (
+				4B0C19902E903C7E004127E8 /* Sources */,
+				4B0C19912E903C7E004127E8 /* Frameworks */,
+				4B0C19922E903C7E004127E8 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4B0C199A2E903C7F004127E8 /* journalwidget */,
+			);
+			name = journalwidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = journalwidgetExtension;
+			productReference = 4B0C19942E903C7E004127E8 /* journalwidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -202,6 +298,9 @@
 					4B0752872E8F9ED700C43CC2 = {
 						CreatedOnToolsVersion = 16.4;
 						TestTargetID = 4B0752702E8F9ED400C43CC2;
+					};
+					4B0C19932E903C7E004127E8 = {
+						CreatedOnToolsVersion = 16.4;
 					};
 				};
 			};
@@ -225,6 +324,7 @@
 				4B0752702E8F9ED400C43CC2 /* VoiceJournal */,
 				4B07527D2E8F9ED700C43CC2 /* VoiceJournalTests */,
 				4B0752872E8F9ED700C43CC2 /* VoiceJournalUITests */,
+				4B0C19932E903C7E004127E8 /* journalwidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -245,6 +345,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		4B0752862E8F9ED700C43CC2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4B0C19922E903C7E004127E8 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -275,6 +382,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4B0C19902E903C7E004127E8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -287,6 +401,11 @@
 			isa = PBXTargetDependency;
 			target = 4B0752702E8F9ED400C43CC2 /* VoiceJournal */;
 			targetProxy = 4B0752892E8F9ED700C43CC2 /* PBXContainerItemProxy */;
+		};
+		4B0C19A92E903C81004127E8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4B0C19932E903C7E004127E8 /* journalwidgetExtension */;
+			targetProxy = 4B0C19A82E903C81004127E8 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -425,6 +544,7 @@
 				INFOPLIST_FILE = VoiceJournal/Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "VoiceJournal needs microphone access to record your voice entries.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "VoiceJournal uses speech recognition to transcribe your recordings to text.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -456,6 +576,7 @@
 				INFOPLIST_FILE = VoiceJournal/Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "VoiceJournal needs microphone access to record your voice entries.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "VoiceJournal uses speech recognition to transcribe your recordings to text.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -546,6 +667,62 @@
 			};
 			name = Release;
 		};
+		4B0C19AC2E903C81004127E8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = C7RX29D33F;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = journalwidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = journalwidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = rujin.VoiceJournal.journalwidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4B0C19AD2E903C81004127E8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = C7RX29D33F;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = journalwidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = journalwidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = rujin.VoiceJournal.journalwidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -581,6 +758,15 @@
 			buildConfigurations = (
 				4B0752992E8F9ED700C43CC2 /* Debug */,
 				4B07529A2E8F9ED700C43CC2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4B0C19AB2E903C81004127E8 /* Build configuration list for PBXNativeTarget "journalwidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4B0C19AC2E903C81004127E8 /* Debug */,
+				4B0C19AD2E903C81004127E8 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

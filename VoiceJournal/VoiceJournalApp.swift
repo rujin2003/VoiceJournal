@@ -12,7 +12,7 @@ import SwiftData
 struct VoiceJournalApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
         }
         .modelContainer(for: [JournalNote.self, Streak.self])
     }

@@ -514,7 +514,7 @@ struct JournalCardView: View {
                 Button(action: {
                     showEditSheet = true
                 }) {
-                    Image(systemName: "pencil.circle.fill")
+                    Image(systemName: "pencil")
                         .font(.system(size: 22))
                         .foregroundColor(entry.color)
                 }

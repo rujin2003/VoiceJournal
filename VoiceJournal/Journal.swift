@@ -90,7 +90,7 @@ struct JournalView: View {
                         showEditor = false
                     },
                     onSave: {
-                        // No-op: saving handled in JournalView for creation flow
+                        
                     },
                     onUpdate: { updatedContent, updatedTitle in
                         self.editedAttributedString = updatedContent
@@ -166,19 +166,35 @@ struct JournalView: View {
             )
             modelContext.insert(newNote)
 
-            // Update streak
+           
             try updateStreakAfterCreate()
 
             try modelContext.save()
 
-            // Notify HomeView to show confetti
+          
             NotificationCenter.default.post(name: .journalSaved, object: nil)
 
-            // Reset and go back
+            
             discardTranscription()
             dismiss()
+
+           
+            let currentStreak = try fetchCurrentStreak()
+            LiveActivityManager.shared.startStreakActivity(currentStreak: currentStreak.currentStreak, longestStreak: currentStreak.longestStreak)
+            LiveActivityManager.shared.updateStreakActivity(currentStreak: currentStreak.currentStreak, longestStreak: currentStreak.longestStreak)
+            LiveActivityManager.shared.endStreakActivity(after: 10)
         } catch {
             print("Error saving new journal: \(error)")
+        }
+    }
+
+    private func fetchCurrentStreak() throws -> Streak {
+        let streakFetchDescriptor = FetchDescriptor<Streak>()
+        let streaks = try modelContext.fetch(streakFetchDescriptor)
+        if let existing = streaks.first {
+            return existing
+        } else {
+            return Streak()
         }
     }
 
