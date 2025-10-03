@@ -1,3 +1,4 @@
+
 //
 //  Home.swift
 //  VoiceJournal
@@ -8,6 +9,7 @@ import SwiftUI
 import SwiftData
 
 struct HomeView: View {
+    @Environment(\.modelContext) private var modelContext
     @StateObject private var viewModel = HomeViewModel()
     @Query(sort: \JournalNote.createdAt, order: .reverse) private var notes: [JournalNote]
     
@@ -57,7 +59,8 @@ struct HomeView: View {
                             JournalCardsDisplayView(
                                 entries: viewModel.entriesForDate(selectedDate, in: notes),
                                 selectedDate: selectedDate,
-                                containerHeight: geo.size.height
+                                containerHeight: geo.size.height,
+                                modelContext: modelContext
                             )
                         }
                         .padding(.horizontal, 8)
@@ -136,13 +139,14 @@ struct TimelineRulerView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
+              
                 VStack {
                     Rectangle()
                         .fill(LinearGradient(colors: [Color(red: 0.7, green: 0.65, blue: 0.85).opacity(0.8), Color(red: 0.7, green: 0.65, blue: 0.85).opacity(0.3)], startPoint: .top, endPoint: .bottom))
                         .frame(width: 3)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 30)
+                .padding(.leading, 28)
                 
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
@@ -179,17 +183,18 @@ struct TimelineRulerView: View {
                     }
                 }
                 
+
                 VStack {
-                    Image("journalicon") // Make sure this image is in your Assets
+                    Image("journalicon")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 28, height: 28)
                         .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-                        .alignmentGuide(.top) { d in d[.top] + (itemHeight / 2 - d.height / 2) }
+                        .offset(y: itemHeight / 2 - 14)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 16)
+                .padding(.leading, 14)
                 .frame(maxHeight: .infinity, alignment: .top)
             }
         }
@@ -221,7 +226,7 @@ struct TimelineItemView: View {
                     .fill(hasEntries ? Color(red: 0.7, green: 0.65, blue: 0.85) : Color.gray.opacity(0.3))
                     .frame(width: isSelected ? 22 : 16, height: isSelected ? 22 : 16)
             }
-            .frame(width: 40)
+            .frame(width: 38)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(date, format: .dateTime.month(.abbreviated).day())
@@ -232,7 +237,7 @@ struct TimelineItemView: View {
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary.opacity(0.8))
             }
-            .padding(.leading, 6)
+            .padding(.leading, 8)
             Spacer()
         }
         .scaleEffect(isSelected ? 1.08 : 1.0)
@@ -244,6 +249,7 @@ struct JournalCardsDisplayView: View {
     let entries: [JournalNote]
     let selectedDate: Date
     let containerHeight: CGFloat
+    let modelContext: ModelContext
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -252,7 +258,7 @@ struct JournalCardsDisplayView: View {
             } else {
                 LazyVStack(spacing: 16) {
                     ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                        JournalCardView(entry: entry, index: index)
+                        JournalCardView(entry: entry, index: index, modelContext: modelContext)
                     }
                 }
                 .padding(.vertical, 16)
@@ -266,7 +272,10 @@ struct JournalCardsDisplayView: View {
 struct JournalCardView: View {
     let entry: JournalNote
     let index: Int
+    let modelContext: ModelContext
     @State private var isVisible = false
+    @State private var offset: CGFloat = 0
+    @State private var isSwiping = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -300,7 +309,52 @@ struct JournalCardView: View {
                 .shadow(color: entry.color.opacity(0.15), radius: 10, x: 0, y: 5)
         )
         .opacity(isVisible ? 1 : 0)
-        .offset(x: isVisible ? 0 : 30)
+        .offset(x: isVisible ? offset : 30)
+        .background(
+      
+            HStack {
+                Spacer()
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18)
+                        .fill(Color.red)
+                    VStack(spacing: 4) {
+                        Image(systemName: "trash.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.white)
+                        Text("Delete")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                }
+                .frame(width: 80)
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .gesture(
+            DragGesture()
+                .onChanged { gesture in
+                    if gesture.translation.width < 0 {
+                        offset = gesture.translation.width
+                        isSwiping = true
+                    }
+                }
+                .onEnded { gesture in
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        if gesture.translation.width < -100 {
+                       
+                            offset = -500
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                modelContext.delete(entry)
+                                try? modelContext.save()
+                            }
+                        } else {
+                      
+                            offset = 0
+                        }
+                        isSwiping = false
+                    }
+                }
+        )
         .onAppear {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.75).delay(Double(index) * 0.1)) {
                 isVisible = true
@@ -317,17 +371,12 @@ struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: 16) {
             if isToday {
-                ZStack {
-                    Circle()
-                        .fill(LinearGradient(colors: [Color.vibrantPurple.opacity(0.2), Color.vibrantTeal.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 120, height: 120)
-                    Image(systemName: "pencil.circle.fill")
-                        .font(.system(size: 70))
-                        .foregroundColor(.vibrantPurple)
-                }
-                Text("Please journal today")
+                Image(systemName: "book.closed")
+                    .font(.system(size: 60))
+                    .foregroundColor(.vibrantPurple)
+                Text("No entries today")
                     .font(.system(size: 22, weight: .bold))
-                Text("Start capturing your thoughts")
+                Text("Tap + to start journaling")
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(.secondary)
             } else {
@@ -353,4 +402,3 @@ struct DatePositionPreferenceKey: PreferenceKey {
         value.merge(nextValue()) { $1 }
     }
 }
-

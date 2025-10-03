@@ -364,6 +364,8 @@ struct DiscardButtonView: View {
 }
 
 struct HeaderView: View {
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
@@ -377,6 +379,13 @@ struct HeaderView: View {
                     .foregroundColor(.secondary)
             }
             Spacer()
+            Button(action: {
+                dismiss()
+            }) {
+                Image(systemName: "calendar.day.timeline.left")
+                    .font(.title2)
+                    .foregroundColor(Color.vibrantPurple.opacity(0.6))
+            }
         }
         .padding(.horizontal, 24)
         .padding(.top, 10)
