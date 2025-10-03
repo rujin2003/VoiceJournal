@@ -111,6 +111,24 @@ struct JournalNoteEditorView: View {
     var onDismiss: () -> Void
     var onSave: () -> Void
     
+    init(note: JournalNote, onDismiss: @escaping () -> Void = {}, onSave: @escaping () -> Void = {}) {
+        self.existingNote = note
+        self._attributedText = State(initialValue: NSMutableAttributedString(attributedString: note.attributedString ?? NSAttributedString(string: "")))
+        self._noteTitle = State(initialValue: note.title)
+        self.mood = note.mood
+        self.onDismiss = onDismiss
+        self.onSave = onSave
+        
+        let initialColor = Color(uiColor: (note.attributedString?.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor) ?? .label)
+        self._selectedColor = State(initialValue: initialColor)
+        
+        let initialTypingAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 18),
+            .foregroundColor: UIColor.label
+        ]
+        self._typingAttributes = State(initialValue: initialTypingAttributes)
+    }
+
     init(preloadedAttributedString: NSAttributedString, title: String, mood: String, onDismiss: @escaping () -> Void = {}, onSave: @escaping () -> Void = {}) {
         self._attributedText = State(initialValue: NSMutableAttributedString(attributedString: preloadedAttributedString))
         self.existingNote = nil

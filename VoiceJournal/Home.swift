@@ -482,7 +482,8 @@ struct JournalCardView: View {
     @State private var isVisible = false
     @State private var offset: CGFloat = 0
     @State private var isSwiping = false
-    
+    @State private var showEditSheet = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -500,6 +501,13 @@ struct JournalCardView: View {
                         .foregroundColor(.primary)
                 }
                 Spacer()
+                Button(action: {
+                    showEditSheet = true
+                }) {
+                    Image(systemName: "pencil.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(entry.color)
+                }
             }
             
             Text(entry.plainTextPreview)
@@ -562,6 +570,13 @@ struct JournalCardView: View {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.75).delay(Double(index) * 0.1)) {
                 isVisible = true
             }
+        }
+        .sheet(isPresented: $showEditSheet) {
+            JournalNoteEditorView(note: entry, onDismiss: {
+                showEditSheet = false
+            }, onSave: {
+                showEditSheet = false
+            })
         }
     }
 }

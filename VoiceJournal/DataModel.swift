@@ -38,6 +38,13 @@ final class JournalNote {
         return String(fullString.prefix(150))
     }
     
+    var attributedString: NSAttributedString? {
+        guard let data = Data(base64Encoded: noteContent),
+              let attributedString = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSAttributedString.self, from: data) else {
+            return NSAttributedString(string: noteContent)
+        }
+        return attributedString
+    }
 
     var color: Color {
         Color.fromString(colorString)
