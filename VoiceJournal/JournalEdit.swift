@@ -111,11 +111,11 @@ struct JournalNoteEditorView: View {
     var onDismiss: () -> Void
     var onSave: () -> Void
     
-    init(preloadedAttributedString: NSAttributedString, mood: String, onDismiss: @escaping () -> Void = {}, onSave: @escaping () -> Void = {}) {
+    init(preloadedAttributedString: NSAttributedString, title: String, mood: String, onDismiss: @escaping () -> Void = {}, onSave: @escaping () -> Void = {}) {
         self._attributedText = State(initialValue: NSMutableAttributedString(attributedString: preloadedAttributedString))
         self.existingNote = nil
         self.mood = mood
-        self._noteTitle = State(initialValue: "")
+        self._noteTitle = State(initialValue: title)
         self.onDismiss = onDismiss
         self.onSave = onSave
         

@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
 
+
 struct JournalView: View {
     @Environment(\.modelContext) private var modelContext
     
@@ -12,6 +13,7 @@ struct JournalView: View {
     @State private var showNotePreview = false
     @State private var preloadedAttributedString: NSAttributedString?
     @State private var showEditor = false
+    @State private var generatedTitle: String = ""
     
     @State private var selectedMood: String = "😊"
     @State private var availableMoods: [String] = ["😊", "🤩", "🥰", "😐", "😢", "😠", "🤔", "😎"]
@@ -36,7 +38,7 @@ struct JournalView: View {
                         audioLevel: audioLevel
                     )
                 } else if showNotePreview, let content = preloadedAttributedString {
-                    NotePreviewView(content: content, action: { showEditor = true })
+                    NotePreviewView(title: generatedTitle, content: content, action: { showEditor = true })
                     
                     MoodSelectorView(
                         moods: availableMoods,
@@ -74,20 +76,27 @@ struct JournalView: View {
             if let preloadedContent = preloadedAttributedString {
                 JournalNoteEditorView(
                     preloadedAttributedString: preloadedContent,
+                    title: generatedTitle,
                     mood: selectedMood,
                     onDismiss: {
-                       
                         showEditor = false
                     },
                     onSave: {
-                        
                         discardTranscription()
                     }
                 )
             }
         }
     }
-    
+
+       
+ 
+       private func extractTitleFromContent(_ content: String) -> String {
+           let words = content.split(separator: " ")
+           let titleWords = words.prefix(6)
+           return titleWords.joined(separator: " ")
+       }
+   
     private func setupSpeechRecognizer() {
         speechRecognizer.onTranscriptionUpdate = { text in self.transcription = text }
         speechRecognizer.onAudioLevelUpdate = { level in
@@ -101,7 +110,6 @@ struct JournalView: View {
         isRecording.toggle()
         
         if isRecording {
-            discardTranscription()
             speechRecognizer.startTranscribing()
         } else {
             speechRecognizer.stopTranscribing()
@@ -117,6 +125,7 @@ struct JournalView: View {
             .foregroundColor: UIColor.label
         ]
         self.preloadedAttributedString = NSAttributedString(string: transcription, attributes: attributes)
+        self.generatedTitle = extractTitleFromContent(transcription)
         self.showNotePreview = true
     }
     
@@ -292,13 +301,14 @@ struct TranscriptionPlaceholderView: View {
 }
 
 struct NotePreviewView: View {
+    let title: String
     let content: NSAttributedString
     let action: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Your Journal Entry")
+                Text(title)
                     .font(.headline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
