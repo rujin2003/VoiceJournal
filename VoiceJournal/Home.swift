@@ -5,6 +5,7 @@
 //
 //  Created by Rujin Devkota on 10/3/25.
 //
+
 import SwiftUI
 import SwiftData
 
@@ -15,6 +16,7 @@ struct HomeView: View {
     @Query private var streaks: [Streak]
     
     @State private var selectedDate: Date = Date()
+    @State private var currentTab: Int = 0
     private let rulerItemHeight: CGFloat = 90
     
     var body: some View {
@@ -25,7 +27,7 @@ struct HomeView: View {
                 
                 VStack(spacing: 0) {
                     HStack {
-                        Text("Your Journey")
+                        Text(currentTab == 0 ? "Your Journey" : "Calendar View")
                             .font(.system(size: 26, weight: .bold))
                             .foregroundColor(.black)
                         Spacer()
@@ -37,52 +39,261 @@ struct HomeView: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
-                        
-                    StreakCardView(
-                        streak: streaks.first
-                    )
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                        
-                    GeometryReader { geo in
-                        HStack(spacing: 12) {
-                            TimelineRulerView(
-                                viewModel: viewModel,
-                                notes: notes,
-                                selectedDate: $selectedDate,
-                                itemHeight: rulerItemHeight,
-                                containerHeight: geo.size.height
-                            )
-                            .frame(width: 100)
+                    
+                    TabView(selection: $currentTab) {
+                 
+                        VStack(spacing: 0) {
+                            StreakCardView(streak: streaks.first, currentTab: currentTab)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 12)
                             
-                            JournalCardsDisplayView(
-                                entries: viewModel.entriesForDate(selectedDate, in: notes),
-                                selectedDate: selectedDate,
-                                containerHeight: geo.size.height,
-                                modelContext: modelContext
-                            )
+                            GeometryReader { geo in
+                                HStack(spacing: 12) {
+                                    TimelineRulerView(
+                                        viewModel: viewModel,
+                                        notes: notes,
+                                        selectedDate: $selectedDate,
+                                        itemHeight: rulerItemHeight,
+                                        containerHeight: geo.size.height
+                                    )
+                                    .frame(width: 100)
+                                    
+                                    JournalCardsDisplayView(
+                                        entries: viewModel.entriesForDate(selectedDate, in: notes),
+                                        selectedDate: selectedDate,
+                                        containerHeight: geo.size.height,
+                                        modelContext: modelContext
+                                    )
+                                }
+                                .padding(.horizontal, 8)
+                            }
                         }
-                        .padding(.horizontal, 8)
+                        .tag(0)
+                        
+                      
+                        VStack(spacing: 0) {
+                            CalendarViewCard(
+                                selectedDate: $selectedDate,
+                                notes: notes,
+                                viewModel: viewModel
+                            )
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            
+                            GeometryReader { geo in
+                                JournalCardsDisplayView(
+                                    entries: viewModel.entriesForDate(selectedDate, in: notes),
+                                    selectedDate: selectedDate,
+                                    containerHeight: geo.size.height,
+                                    modelContext: modelContext
+                                )
+                                .padding(.horizontal, 20)
+                            }
+                        }
+                        .tag(1)
                     }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .animation(.easeInOut, value: currentTab)
+                    
+                  
+                    HStack(spacing: 8) {
+                        ForEach(0..<2, id: \.self) { index in
+                            Circle()
+                                .fill(currentTab == index ? Color.vibrantPurple : Color.gray.opacity(0.3))
+                                .frame(width: 8, height: 8)
+                                .animation(.spring(response: 0.3), value: currentTab)
+                        }
+                    }
+                    .padding(.bottom, 12)
+                    .opacity(currentTab == 0 ? 0 : 1)
                 }
             }
         }
     }
 }
 
-// MARK: - Subviews
+// MARK: - Calendar View Card
+
+struct CalendarViewCard: View {
+    @Binding var selectedDate: Date
+    let notes: [JournalNote]
+    let viewModel: HomeViewModel
+    
+    @State private var currentMonth: Date = Date()
+    
+    private let calendar = Calendar.current
+    private let daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            
+            HStack {
+                Button(action: { changeMonth(by: -1) }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.vibrantPurple)
+                }
+                
+                Spacer()
+                
+                Text(currentMonth, format: .dateTime.month(.wide).year())
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Button(action: { changeMonth(by: 1) }) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.vibrantPurple)
+                }
+            }
+            .padding(.horizontal, 4)
+            
+       
+            HStack(spacing: 0) {
+                ForEach(daysOfWeek, id: \.self) { day in
+                    Text(day)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            
+       
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 8) {
+                ForEach(Array(getDaysInMonth().enumerated()), id: \.offset) { _, date in
+                    if let date = date {
+                        CalendarDayCell(
+                            date: date,
+                            isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
+                            isToday: calendar.isDateInToday(date),
+                            hasEntries: viewModel.hasEntries(for: date, in: notes),
+                            entryCount: viewModel.entriesForDate(date, in: notes).count
+                        )
+                        .id(date)
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                selectedDate = date
+                            }
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }
+                    } else {
+                        Color.clear
+                            .frame(height: 44)
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(.white)
+                .shadow(color: .vibrantPurple.opacity(0.1), radius: 10, x: 0, y: 4)
+        )
+    }
+    
+    private func getDaysInMonth() -> [Date?] {
+        guard let monthInterval = calendar.dateInterval(of: .month, for: currentMonth),
+              let monthFirstWeek = calendar.dateInterval(of: .weekOfMonth, for: monthInterval.start) else {
+            return []
+        }
+        
+        let daysInMonth = calendar.range(of: .day, in: .month, for: currentMonth)?.count ?? 0
+        let firstDayWeekday = calendar.component(.weekday, from: monthInterval.start)
+        let leadingEmptyDays = firstDayWeekday - 1
+        
+        var days: [Date?] = Array(repeating: nil, count: leadingEmptyDays)
+        
+        for day in 1...daysInMonth {
+            if let date = calendar.date(bySetting: .day, value: day, of: currentMonth) {
+                days.append(date)
+            }
+        }
+        
+        while days.count % 7 != 0 {
+            days.append(nil)
+        }
+        
+        return days
+    }
+    
+    private func changeMonth(by value: Int) {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            if let newMonth = calendar.date(byAdding: .month, value: value, to: currentMonth) {
+                currentMonth = newMonth
+            }
+        }
+    }
+}
+
+struct CalendarDayCell: View {
+    let date: Date
+    let isSelected: Bool
+    let isToday: Bool
+    let hasEntries: Bool
+    let entryCount: Int
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Text("\(Calendar.current.component(.day, from: date))")
+                .font(.system(size: 16, weight: isSelected ? .bold : .medium))
+                .foregroundColor(isSelected ? .white : (isToday ? .vibrantPurple : .primary))
+            
+            if hasEntries {
+                HStack(spacing: 2) {
+                    ForEach(0..<min(entryCount, 3), id: \.self) { _ in
+                        Circle()
+                            .fill(isSelected ? .white : Color(red: 0.7, green: 0.65, blue: 0.85))
+                            .frame(width: 4, height: 4)
+                    }
+                }
+            } else {
+                Spacer()
+                    .frame(height: 4)
+            }
+        }
+        .frame(height: 44)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(isSelected ? Color.vibrantPurple : (isToday ? Color.vibrantPurple.opacity(0.1) : Color.clear))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(isToday && !isSelected ? Color.vibrantPurple : Color.clear, lineWidth: 2)
+        )
+        .scaleEffect(isSelected ? 1.05 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+    }
+}
+
+// MARK: -Subviews
 
 struct StreakCardView: View {
     var streak: Streak?
+    var currentTab: Int
     
     var body: some View {
-        HStack(spacing: 10) {
-            StreakItemView(icon: "flame.fill", value: "\(streak?.currentStreak ?? 0)", label: "Day Streak", color: .vibrantOrange, isLarge: true)
-            
-            VStack(spacing: 10) {
-                StreakItemView(icon: "star.fill", value: "\(streak?.longestStreak ?? 0)", label: "Longest", color: .vibrantGold, isLarge: false)
-                StreakItemView(icon: "book.fill", value: "\(streak?.numberOfEntries ?? 0)", label: "Entries", color: .vibrantTeal, isLarge: false)
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                StreakItemView(icon: "flame.fill", value: "\(streak?.currentStreak ?? 0)", label: "Day Streak", color: .vibrantOrange, isLarge: true)
+                
+                VStack(spacing: 10) {
+                    StreakItemView(icon: "star.fill", value: "\(streak?.longestStreak ?? 0)", label: "Longest", color: .vibrantGold, isLarge: false)
+                    StreakItemView(icon: "book.fill", value: "\(streak?.numberOfEntries ?? 0)", label: "Entries", color: .vibrantTeal, isLarge: false)
+                }
             }
+            
+            HStack(spacing: 6) {
+                ForEach(0..<2, id: \.self) { index in
+                    Circle()
+                        .fill(currentTab == index ? Color.vibrantPurple : Color.gray.opacity(0.3))
+                        .frame(width: 6, height: 6)
+                        .animation(.spring(response: 0.3), value: currentTab)
+                }
+            }
+            .padding(.top, 4)
         }
     }
 }
@@ -136,7 +347,6 @@ struct TimelineRulerView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-              
                 VStack {
                     Rectangle()
                         .fill(LinearGradient(colors: [Color(red: 0.7, green: 0.65, blue: 0.85).opacity(0.8), Color(red: 0.7, green: 0.65, blue: 0.85).opacity(0.3)], startPoint: .top, endPoint: .bottom))
@@ -180,7 +390,6 @@ struct TimelineRulerView: View {
                     }
                 }
                 
-
                 VStack {
                     Image("journalicon")
                         .resizable()
@@ -308,7 +517,6 @@ struct JournalCardView: View {
         .opacity(isVisible ? 1 : 0)
         .offset(x: isVisible ? offset : 30)
         .background(
-      
             HStack {
                 Spacer()
                 ZStack {
@@ -338,14 +546,12 @@ struct JournalCardView: View {
                 .onEnded { gesture in
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         if gesture.translation.width < -100 {
-                       
                             offset = -500
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 modelContext.delete(entry)
                                 try? modelContext.save()
                             }
                         } else {
-                      
                             offset = 0
                         }
                         isSwiping = false
