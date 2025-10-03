@@ -4,137 +4,95 @@
 //
 //  Created by Rujin Devkota on 10/3/25.
 //
-
-//
-//  Home.swift
-//  VoiceJournal
-//
-//  Created by Rujin Devkota on 10/3/25.
-//
-
 import SwiftUI
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
-    @State private var scrollOffset: CGFloat = 0
-    @State private var activeIndex: Int? = 0
-
-    private let cardHeight: CGFloat = 150
-    private let cardSpacing: CGFloat = 16
-    private var itemHeight: CGFloat { cardHeight + cardSpacing }
-
+    @State private var selectedDate: Date = Date()
+    private let rulerItemHeight: CGFloat = 90
+    
     var body: some View {
         ZStack {
-            LinearGradient(colors: [Color(red: 0.95, green: 0.96, blue: 0.98), Color.white], startPoint: .top, endPoint: .bottom)
+            LinearGradient(colors: [.appBackgroundStart, .appBackgroundEnd], startPoint: .topLeading, endPoint: .bottomTrailing)
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
+                HStack {
+                    Text("Your Journey")
+                        .font(.system(size: 26, weight: .bold))
+                        .foregroundColor(.black)
+                    Spacer()
+                    Button(action: {}) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(.vibrantPurple)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                
                 StreakCardView(
                     currentStreak: viewModel.currentStreak,
                     longestStreak: viewModel.longestStreak,
                     totalEntries: viewModel.totalEntries
                 )
                 .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 12)
-
-                GeometryReader { mainGeo in
-                    let scrollAreaHeight = mainGeo.size.height
-                    let verticalPadding = (scrollAreaHeight / 2) - (itemHeight / 2)
-
-                    HStack(alignment: .top, spacing: 0) {
-                        DateRulerView(
-                            scrollOffset: scrollOffset,
-                            entries: viewModel.entries,
-                            activeIndex: $activeIndex,
-                            itemHeight: itemHeight,
-                            verticalPadding: verticalPadding,
-                            rulerHeight: scrollAreaHeight
+                .padding(.vertical, 12)
+                
+                GeometryReader { geo in
+                    HStack(spacing: 12) {
+                        TimelineRulerView(
+                            viewModel: viewModel,
+                            selectedDate: $selectedDate,
+                            itemHeight: rulerItemHeight,
+                            containerHeight: geo.size.height
                         )
-                        .frame(width: 80)
-
-                        ScrollView(showsIndicators: false) {
-                            GeometryReader { scrollGeo in
-                                Color.clear.preference(
-                                    key: ScrollOffsetPreferenceKey.self,
-                                    value: scrollGeo.frame(in: .named("scroll")).minY
-                                )
-                            }
-                            .frame(height: 0)
-                            
-                            LazyVStack(spacing: cardSpacing) {
-                                ForEach(Array(viewModel.entries.enumerated()), id: \.element.id) { index, entry in
-                                    JournalCardView(entry: entry, index: index, cardHeight: cardHeight)
-                                }
-                            }
-                            .padding(.vertical, verticalPadding)
-                        }
-                        .coordinateSpace(name: "scroll")
-                        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                            scrollOffset = value
-                            updateActiveIndex(from: value, containerHeight: scrollAreaHeight)
-                        }
+                        .frame(width: 100)
+                        
+                        JournalCardsDisplayView(
+                            entries: viewModel.entriesForDate(selectedDate),
+                            selectedDate: selectedDate,
+                            containerHeight: geo.size.height
+                        )
                     }
+                    .padding(.horizontal, 8)
                 }
             }
         }
     }
-
-    private func updateActiveIndex(from offset: CGFloat, containerHeight: CGFloat) {
-        let centerLine = containerHeight / 2
-        let centeredIndex = Int(round((centerLine - offset - (itemHeight / 2)) / itemHeight))
-        
-        guard centeredIndex >= 0 && centeredIndex < viewModel.entries.count else { return }
-        
-        if centeredIndex != activeIndex {
-            activeIndex = centeredIndex
-            let generator = UIImpactFeedbackGenerator(style: .soft)
-            generator.impactOccurred()
-        }
-    }
 }
 
-// MARK: - Streak Card View
 struct StreakCardView: View {
     let currentStreak: Int
     let longestStreak: Int
     let totalEntries: Int
     
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text("Your Journey")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(.primary)
-                Spacer()
-            }
+        HStack(spacing: 10) {
+            StreakItemView(
+                icon: "flame.fill",
+                value: "\(currentStreak)",
+                label: "Day Streak",
+                color: .vibrantOrange,
+                isLarge: true
+            )
             
-            HStack(spacing: 12) {
+            VStack(spacing: 10) {
                 StreakItemView(
-                    icon: "flame.fill",
-                    value: "\(currentStreak)",
-                    label: "Day Streak",
-                    color: .orange,
-                    isLarge: true
+                    icon: "star.fill",
+                    value: "\(longestStreak)",
+                    label: "Longest",
+                    color: .vibrantGold,
+                    isLarge: false
                 )
                 
-                VStack(spacing: 12) {
-                    StreakItemView(
-                        icon: "star.fill",
-                        value: "\(longestStreak)",
-                        label: "Longest",
-                        color: .yellow,
-                        isLarge: false
-                    )
-                    
-                    StreakItemView(
-                        icon: "book.fill",
-                        value: "\(totalEntries)",
-                        label: "Entries",
-                        color: .blue,
-                        isLarge: false
-                    )
-                }
+                StreakItemView(
+                    icon: "book.fill",
+                    value: "\(totalEntries)",
+                    label: "Entries",
+                    color: .vibrantTeal,
+                    isLarge: false
+                )
             }
         }
     }
@@ -148,215 +106,302 @@ struct StreakItemView: View {
     let isLarge: Bool
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Image(systemName: icon)
-                    .font(.system(size: isLarge ? 24 : 18))
-                    .foregroundColor(color)
+                ZStack {
+                    Circle()
+                        .fill(color.opacity(0.2))
+                        .frame(width: isLarge ? 34 : 28, height: isLarge ? 34 : 28)
+                    Image(systemName: icon)
+                        .font(.system(size: isLarge ? 18 : 14))
+                        .foregroundColor(color)
+                }
                 Spacer()
             }
             
             Text(value)
-                .font(.system(size: isLarge ? 42 : 28, weight: .bold))
+                .font(.system(size: isLarge ? 34 : 22, weight: .bold))
                 .foregroundColor(.primary)
             
             Text(label)
-                .font(.system(size: isLarge ? 16 : 14, weight: .medium))
+                .font(.system(size: isLarge ? 14 : 12, weight: .medium))
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(isLarge ? 20 : 16)
+        .padding(isLarge ? 14 : 10)
         .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(.background)
-                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 5)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(color.opacity(0.3), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.white)
+                .shadow(color: color.opacity(0.2), radius: 8, x: 0, y: 4)
         )
     }
 }
 
-// MARK: -  Date Ruler
-struct DateRulerView: View {
-    let scrollOffset: CGFloat
-    let entries: [JournalEntry]
-    @Binding var activeIndex: Int?
-    
+struct TimelineRulerView: View {
+    @ObservedObject var viewModel: HomeViewModel
+    @Binding var selectedDate: Date
     let itemHeight: CGFloat
-    let verticalPadding: CGFloat
-    let rulerHeight: CGFloat
-
+    let containerHeight: CGFloat
+    
     var body: some View {
-        ZStack {
-            RulerBackgroundTicksView(itemHeight: itemHeight, topPadding: verticalPadding)
-                .offset(y: scrollOffset)
-
-            VStack(spacing: 0) {
-                let centerLine = rulerHeight / 2
-                
-                ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                    let itemYPosition = verticalPadding + (CGFloat(index) * itemHeight) + scrollOffset + (itemHeight / 2)
-                    let distanceFromCenter = abs(centerLine - itemYPosition)
-                    
-                    RulerMarkingView(
-                        entry: entry,
-                        isActive: activeIndex == index,
-                        distanceFromCenter: distanceFromCenter
-                    )
-                    .frame(height: itemHeight)
+        GeometryReader { geo in
+            ZStack {
+                VStack {
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(red: 0.7, green: 0.65, blue: 0.85).opacity(0.8), Color(red: 0.7, green: 0.65, blue: 0.85).opacity(0.3)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(width: 3)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 30)
+                
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        LazyVStack(spacing: 0) {
+                            ForEach(viewModel.allDatesFromToday, id: \.self) { date in
+                                TimelineItemView(
+                                    date: date,
+                                    isSelected: Calendar.current.isDate(date, inSameDayAs: selectedDate),
+                                    hasEntries: viewModel.hasEntries(for: date),
+                                    entryCount: viewModel.entriesForDate(date).count
+                                )
+                                .frame(height: itemHeight)
+                                .id(date)
+                                .background(
+                                    GeometryReader { itemGeo in
+                                        Color.clear.preference(
+                                            key: DatePositionPreferenceKey.self,
+                                            value: [date: itemGeo.frame(in: .named("scroll")).midY]
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                        .padding(.bottom, containerHeight - itemHeight / 2)
+                    }
+                    .coordinateSpace(name: "scroll")
+                    .onPreferenceChange(DatePositionPreferenceKey.self) { positions in
+                        updateSelectedDate(from: positions)
+                    }
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            proxy.scrollTo(Date(), anchor: .top)
+                        }
+                    }
+                }
+                
+                VStack {
+                    Image("journalicon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 28, height: 28)
+                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        .alignmentGuide(.top) { d in d[.top] + (itemHeight / 2 - d.height / 2) }
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 16)
+                .frame(maxHeight: .infinity, alignment: .top)
+
             }
         }
-        .clipped()
+    }
+    
+    private func updateSelectedDate(from positions: [Date: CGFloat]) {
+        let selectionY = itemHeight / 2
+        var closestDate: Date?
+        var minDistance: CGFloat = .infinity
+        
+        for (date, y) in positions {
+            let distance = abs(y - selectionY)
+            if distance < minDistance {
+                minDistance = distance
+                closestDate = date
+            }
+        }
+        
+        if let newDate = closestDate, !Calendar.current.isDate(newDate, inSameDayAs: selectedDate) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                selectedDate = newDate
+            }
+            #if os(iOS)
+            let generator = UIImpactFeedbackGenerator(style: .medium)
+            generator.impactOccurred()
+            #endif
+        }
     }
 }
 
-// MARK: - Background Ticks View
-struct RulerBackgroundTicksView: View {
-    let itemHeight: CGFloat
-    let topPadding: CGFloat
+struct TimelineItemView: View {
+    let date: Date
+    let isSelected: Bool
+    let hasEntries: Bool
+    let entryCount: Int
     
-    var body: some View {
-        Canvas { context, size in
-            let tickSpacing = itemHeight / 10
-            let totalTicks = Int(size.height / tickSpacing) + 50
-            let midX = size.width - 15
-
-            for i in -25..<totalTicks {
-                let y = CGFloat(i) * tickSpacing
-                let startPoint = CGPoint(x: midX, y: y)
-                var endPoint = CGPoint(x: midX + 5, y: y)
-                var color = Color.gray.opacity(0.3)
-                
-                if i % 5 == 0 {
-                    endPoint = CGPoint(x: midX + 8, y: y)
-                }
-                
-                if i % 10 == 0 {
-                    endPoint = CGPoint(x: midX + 12, y: y)
-                    color = .gray.opacity(0.5)
-                }
-                
-                context.stroke(
-                    Path { path in
-                        path.move(to: startPoint)
-                        path.addLine(to: endPoint)
-                    },
-                    with: .color(color),
-                    lineWidth: 1
-                )
-            }
-        }
-        .padding(.top, topPadding - (itemHeight * 1.5))
-    }
-}
-
-// MARK: - Ruler Marking View
-struct RulerMarkingView: View {
-    let entry: JournalEntry
-    let isActive: Bool
-    let distanceFromCenter: CGFloat
-    
-    private var scale: CGFloat {
-        let maxDistance: CGFloat = 250
-        let normalized = max(0, 1 - (distanceFromCenter / maxDistance))
-        return 1.0 + (normalized * normalized) * 0.7
-    }
-    
-    private var opacity: Double {
-        let maxDistance: CGFloat = 300
-        let normalized = min(distanceFromCenter / maxDistance, 1.0)
-        return Double(0.4 + (1 - normalized) * 0.6)
+    private var isToday: Bool {
+        Calendar.current.isDateInToday(date)
     }
     
     var body: some View {
-        HStack(spacing: 8) {
-            VStack(alignment: .trailing) {
-                Text(entry.date, format: .dateTime.month(.abbreviated).year())
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(isActive ? .blue : .secondary)
-                
-                Text(entry.date, format: .dateTime.day())
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(isActive ? .primary : .secondary)
+        HStack(spacing: 0) {
+            ZStack {
+                Circle()
+                    .fill(hasEntries ? Color(red: 0.7, green: 0.65, blue: 0.85) : Color.gray.opacity(0.3))
+                    .frame(width: isSelected ? 22 : 16, height: isSelected ? 22 : 16)
             }
-            .frame(minWidth: 55, alignment: .trailing)
+            .frame(width: 40)
             
-            Rectangle()
-                .fill(isActive ? Color.blue : Color.gray.opacity(0.5))
-                .frame(width: 2, height: isActive ? 20 : 12)
-                .cornerRadius(1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(date, format: .dateTime.month(.abbreviated).day())
+                    .font(.system(size: isSelected ? 16 : 14, weight: isSelected ? .bold : .semibold))
+                    .foregroundColor(isSelected ? .primary : .secondary)
+                
+                Text(date, format: .dateTime.weekday(.abbreviated))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.secondary.opacity(0.8))
+            }
+            .padding(.leading, 6)
+            
+            Spacer()
         }
-        .scaleEffect(x: scale, y: scale)
-        .opacity(opacity)
-        .animation(.spring(response: 0.4, dampingFraction: 0.6), value: scale)
-        .animation(.easeInOut(duration: 0.3), value: isActive)
+        .scaleEffect(isSelected ? 1.08 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }
 
-// MARK: - Journal Card View
+struct JournalCardsDisplayView: View {
+    let entries: [JournalEntry]
+    let selectedDate: Date
+    let containerHeight: CGFloat
+    
+    private var isToday: Bool {
+        Calendar.current.isDateInToday(selectedDate)
+    }
+    
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            if entries.isEmpty {
+                VStack(spacing: 16) {
+                    if isToday {
+                        ZStack {
+                            Circle()
+                                .fill(LinearGradient(colors: [Color.vibrantPurple.opacity(0.2), Color.vibrantTeal.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .frame(width: 120, height: 120)
+                            
+                            Image(systemName: "pencil.circle.fill")
+                                .font(.system(size: 70))
+                                .foregroundColor(.vibrantPurple)
+                        }
+                        
+                        Text("Please journal today")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(.primary)
+                        
+                        Text("Start capturing your thoughts")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
+                        Button(action: {}) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "plus.circle.fill")
+                                Text("Create Entry")
+                            }
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 14)
+                            .background(
+                                Capsule().fill(
+                                    LinearGradient(colors: [.vibrantPurple, .vibrantTeal], startPoint: .leading, endPoint: .trailing)
+                                )
+                            )
+                        }
+                        .padding(.top, 8)
+                    } else {
+                        Image(systemName: "book.closed")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray.opacity(0.3))
+                        
+                        Text("No entries")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
+                        Text(selectedDate, format: .dateTime.month().day().year())
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary.opacity(0.7))
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: containerHeight)
+            } else {
+                LazyVStack(spacing: 16) {
+                    ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                        JournalCardView(entry: entry, index: index)
+                    }
+                }
+                .padding(.vertical, 16)
+                .padding(.horizontal, 12)
+            }
+        }
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: entries.count)
+    }
+}
+
 struct JournalCardView: View {
     let entry: JournalEntry
     let index: Int
-    let cardHeight: CGFloat
     @State private var isVisible = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(entry.mood)
-                    .font(.system(size: 32))
+                ZStack {
+                    Circle()
+                        .fill(entry.color.opacity(0.15))
+                        .frame(width: 46, height: 46)
+                    Text(entry.mood)
+                        .font(.system(size: 24))
+                }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(entry.title)
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.primary)
-                    
-                    Text(entry.date, style: .time)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
                 }
-                
                 Spacer()
             }
             
             Text(entry.content)
                 .font(.system(size: 15))
                 .foregroundColor(.secondary)
-                .lineLimit(3)
+                .lineLimit(4)
         }
-        .padding(20)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: cardHeight)
         .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(.background)
-                .shadow(color: .black.opacity(0.05), radius: 15, x: 0, y: 8)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(entry.color.opacity(0.4), lineWidth: 1.5)
+            RoundedRectangle(cornerRadius: 18)
+                .fill(.white)
+                .shadow(color: entry.color.opacity(0.15), radius: 10, x: 0, y: 5)
         )
         .opacity(isVisible ? 1 : 0)
-        .offset(y: isVisible ? 0 : 30)
+        .offset(x: isVisible ? 0 : 30)
         .onAppear {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(Double(index % 10) * 0.05)) {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.75).delay(Double(index) * 0.1)) {
                 isVisible = true
             }
         }
     }
 }
 
-// MARK: - Preference Key
-struct ScrollOffsetPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
+struct DatePositionPreferenceKey: PreferenceKey {
+    static var defaultValue: [Date: CGFloat] = [:]
+    static func reduce(value: inout [Date: CGFloat], nextValue: () -> [Date: CGFloat]) {
+        value.merge(nextValue()) { $1 }
     }
 }
 
-#Preview(body: {
-    HomeView()
-})
