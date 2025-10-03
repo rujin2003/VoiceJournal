@@ -29,9 +29,22 @@
 		4B0752882E8F9ED700C43CC2 /* VoiceJournalUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoiceJournalUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4B0C19212E8FFB3A004127E8 /* Exceptions for "VoiceJournal" folder in "VoiceJournal" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4B0752702E8F9ED400C43CC2 /* VoiceJournal */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4B0752732E8F9ED400C43CC2 /* VoiceJournal */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4B0C19212E8FFB3A004127E8 /* Exceptions for "VoiceJournal" folder in "VoiceJournal" target */,
+			);
 			path = VoiceJournal;
 			sourceTree = "<group>";
 		};

@@ -2,14 +2,13 @@ import SwiftUI
 import SwiftData
 
 
+
 struct RichTextView: UIViewRepresentable {
-   
     @Binding var attributedText: NSMutableAttributedString
     @Binding var selectedRange: NSRange
     @Binding var typingAttributes: [NSAttributedString.Key: Any]
     @Binding var isEmpty: Bool
     
-   
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView()
         textView.isEditable = true
@@ -27,7 +26,6 @@ struct RichTextView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UITextView, context: Context) {
-        
         if context.coordinator.isUpdating { return }
         
         if !uiView.attributedText.isEqual(to: attributedText) {
@@ -92,7 +90,6 @@ struct RichTextView: UIViewRepresentable {
     }
 }
 
-
 struct JournalNoteEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -111,11 +108,16 @@ struct JournalNoteEditorView: View {
     private var mood: String
     @State private var noteTitle: String
     
-    init(preloadedAttributedString: NSAttributedString, mood: String) {
+    var onDismiss: () -> Void
+    var onSave: () -> Void
+    
+    init(preloadedAttributedString: NSAttributedString, mood: String, onDismiss: @escaping () -> Void = {}, onSave: @escaping () -> Void = {}) {
         self._attributedText = State(initialValue: NSMutableAttributedString(attributedString: preloadedAttributedString))
         self.existingNote = nil
         self.mood = mood
         self._noteTitle = State(initialValue: "")
+        self.onDismiss = onDismiss
+        self.onSave = onSave
         
         let initialColor = Color(uiColor: preloadedAttributedString.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor ?? .label)
         self._selectedColor = State(initialValue: initialColor)
@@ -151,6 +153,7 @@ struct JournalNoteEditorView: View {
             }
 
             try modelContext.save()
+            onSave()
             dismiss()
         } catch {
             print("Error saving note: \(error)")
@@ -172,13 +175,33 @@ struct JournalNoteEditorView: View {
     private let fontSizes: [CGFloat] = [12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 42, 48]
 
     var body: some View {
-     
         ZStack {
-            Color.appBackground.edgesIgnoringSafeArea(.all)
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 0.95, green: 0.92, blue: 1.0),
+                    Color(red: 0.98, green: 0.95, blue: 1.0)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .edgesIgnoringSafeArea(.all)
             
-            VStack {
+            VStack(spacing: 0) {
                 headerView
-                textEditorView
+                
+              
+                
+                ZStack {
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color.white.opacity(0.8))
+                        .shadow(color: Color.vibrantPurple.opacity(0.1), radius: 10, y: 5)
+                        .padding(.horizontal, 16)
+                    
+                    textEditorView
+                        .padding(.horizontal, 24)
+                }
+                .padding(.top, 12)
+                
                 toolbarView
             }
 
@@ -203,17 +226,47 @@ struct JournalNoteEditorView: View {
     }
 
     private var headerView: some View {
-        HStack {
-            Button(action: { dismiss() }) {
-                Image(systemName: "xmark")
+        HStack(spacing: 16) {
+            Button(action: {
+                onDismiss()
+                dismiss()
+            }) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(.secondary)
             }
-            Spacer()
+            
             TextField("Title", text: $noteTitle)
-                 .multilineTextAlignment(.center)
-            Spacer()
-            Button("Save", action: saveNote)
+                .font(.headline)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 10)
+               
+            
+            Button("Save") {
+                saveNote()
+            }
+            .font(.headline)
+            .fontWeight(.semibold)
+            .foregroundColor(.white)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.vibrantPurple, Color.vibrantPurple.opacity(0.8)]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(12)
+            .shadow(color: Color.vibrantPurple.opacity(0.3), radius: 5, y: 3)
         }
-        .padding()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            Color.white.opacity(0.3)
+                .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
+        )
     }
 
     private var textEditorView: some View {
@@ -223,17 +276,19 @@ struct JournalNoteEditorView: View {
             typingAttributes: $typingAttributes,
             isEmpty: $isEmpty
         )
+        .padding(.vertical, 8)
     }
 
-   
     private var toolbarView: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 16) {
             Button(action: {
                 showFontPicker.toggle()
                 showFontSizePicker = false
             }) {
                 Image(systemName: "textformat")
-                    .foregroundColor(.vibrantPurple)
+                    .font(.system(size: 20))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
             }
             
             Button(action: {
@@ -243,37 +298,56 @@ struct JournalNoteEditorView: View {
                 HStack(spacing: 2) {
                     Text("a")
                         .font(.system(size: 12))
-                        .foregroundColor(.vibrantPurple)
+                        .foregroundColor(.white)
                     Text("A")
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.vibrantPurple)
+                        .foregroundColor(.white)
                 }
+                .frame(width: 44, height: 44)
             }
             
             formatButton(action: toggleBold, icon: "bold", isActive: isBoldActive())
             formatButton(action: toggleItalic, icon: "italic", isActive: isItalicActive())
             formatButton(action: toggleUnderline, icon: "underline", isActive: isUnderlineActive())
-
+            
             ColorPicker("", selection: $selectedColor, supportsOpacity: false)
                 .labelsHidden()
-                .frame(width: 30, height: 30)
+                .frame(width: 44, height: 44)
+                .background(
+                    Circle()
+                        .fill(Color.white.opacity(0.2))
+                )
                 .onChange(of: selectedColor) { newColor in
                     applyAttribute(.foregroundColor, value: UIColor(newColor))
                 }
-
+            
             Button(action: addBulletPoints) {
                 Image(systemName: "list.bullet")
-                    .foregroundColor(.vibrantPurple)
+                    .font(.system(size: 20))
+                    .foregroundColor(.white)
+                    .frame(width: 44, height: 44)
             }
         }
-        .padding()
-        .background(Color.appBackground.opacity(0.8))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 25)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.vibrantPurple, Color.vibrantPurple.opacity(0.3)]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .shadow(color: Color.vibrantPurple.opacity(0.4), radius: 10, y: 5)
+        )
+        .padding(.horizontal, 16)
+        .padding(.vertical,20)
     }
-    
     private func formatButton(action: @escaping () -> Void, icon: String, isActive: Bool) -> some View {
         Button(action: action) {
             Image(systemName: icon)
-                .foregroundColor(.vibrantPurple)
+                .foregroundColor(.white)
                 .padding(8)
                 .background(isActive ? Color.vibrantPurple.opacity(0.2) : Color.clear)
                 .cornerRadius(8)

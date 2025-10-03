@@ -14,7 +14,8 @@ struct JournalView: View {
     @State private var showEditor = false
     
     @State private var selectedMood: String = "😊"
-    private let moods = ["😊", "🤩", "🥰", "😐", "😢", "😠", "🤔", "😎"]
+    @State private var availableMoods: [String] = ["😊", "🤩", "🥰", "😐", "😢", "😠", "🤔", "😎"]
+    @State private var showEmojiPicker = false
 
     var body: some View {
         ZStack {
@@ -37,7 +38,11 @@ struct JournalView: View {
                 } else if showNotePreview, let content = preloadedAttributedString {
                     NotePreviewView(content: content, action: { showEditor = true })
                     
-                    MoodSelectorView(moods: moods, selectedMood: $selectedMood)
+                    MoodSelectorView(
+                        moods: availableMoods,
+                        selectedMood: $selectedMood,
+                        showEmojiPicker: $showEmojiPicker
+                    )
                     
                     DiscardButtonView(action: discardTranscription)
                         .padding(.bottom, 20)
@@ -53,18 +58,32 @@ struct JournalView: View {
                     action: toggleRecording
                 )
             }
+            
+      
+            if showEmojiPicker {
+                EmojiPickerView(
+                    availableMoods: $availableMoods,
+                    showEmojiPicker: $showEmojiPicker
+                )
+            }
         }
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
         .onAppear(perform: setupSpeechRecognizer)
         .sheet(isPresented: $showEditor) {
             if let preloadedContent = preloadedAttributedString {
-                JournalNoteEditorView(preloadedAttributedString: preloadedContent, mood: selectedMood)
-            }
-        }
-        .onChange(of: showEditor) { _, isShowing in
-            if !isShowing {
-                discardTranscription()
+                JournalNoteEditorView(
+                    preloadedAttributedString: preloadedContent,
+                    mood: selectedMood,
+                    onDismiss: {
+                       
+                        showEditor = false
+                    },
+                    onSave: {
+                        
+                        discardTranscription()
+                    }
+                )
             }
         }
     }
@@ -108,47 +127,80 @@ struct JournalView: View {
     }
 }
 
-
-
-struct VoiceWaveformView: View {
-    let audioLevel: CGFloat
-    let isRecording: Bool
+struct EmojiPickerView: View {
+    @Binding var availableMoods: [String]
+    @Binding var showEmojiPicker: Bool
+    @State private var newEmoji: String = ""
     
-    @State private var barHeights: [CGFloat] = Array(repeating: 0.2, count: 40)
+    let emojiSuggestions = [
+        "😀", "😃", "😄", "😁", "😅", "😂", "🤣", "😊", "😇",
+        "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙",
+        "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓",
+        "😎", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", "😕",
+        "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭",
+        "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱",
+        "😨", "😰", "😥", "😓", "🤗", "🤔", "🤭", "🤫", "🤥",
+        "😶", "😐", "😑", "😬", "🙄", "😯", "😦", "😧", "😮"
+    ]
     
     var body: some View {
-        HStack(spacing: 3) {
-            ForEach(0..<40, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(
-                        LinearGradient(
-                            colors: [.vibrantPurple, .vibrantTeal],
-                            startPoint: .bottom,
-                            endPoint: .top
-                        )
-                    )
-                    .frame(width: 3, height: max(4, barHeights[index] * 50))
-                    .animation(.easeInOut(duration: 0.15), value: barHeights[index])
-            }
-        }
-        .onAppear {
-            startWaveAnimation()
-        }
-    }
-    
-    private func startWaveAnimation() {
-        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            if isRecording {
-                for i in 0..<barHeights.count {
-                    let baseHeight = CGFloat.random(in: 0.3...0.7)
-                    let audioInfluence = audioLevel * 0.5
-                    barHeights[i] = min(1.0, baseHeight + audioInfluence)
+        ZStack {
+            Color.black.opacity(0.4)
+                .edgesIgnoringSafeArea(.all)
+                .onTapGesture {
+                    showEmojiPicker = false
                 }
-            } else {
-                for i in 0..<barHeights.count {
-                    barHeights[i] = 0.2
+            
+            VStack(spacing: 0) {
+              
+                HStack {
+                    Text("Add Custom Emoji")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Button(action: { showEmojiPicker = false }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                            .font(.title3)
+                    }
                 }
+                .padding()
+                .background(Color.vibrantPurple.opacity(0.1))
+                
+                Divider()
+                
+                
+                ScrollView {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 6), spacing: 12) {
+                        ForEach(emojiSuggestions, id: \.self) { emoji in
+                            Button(action: {
+                                if !availableMoods.contains(emoji) {
+                                    availableMoods.append(emoji)
+                                }
+                                showEmojiPicker = false
+                            }) {
+                                Text(emoji)
+                                    .font(.system(size: 32))
+                                    .padding(8)
+                                    .background(
+                                        Circle()
+                                            .fill(availableMoods.contains(emoji) ? Color.green.opacity(0.2) : Color.clear)
+                                    )
+                                    .overlay(
+                                        Circle()
+                                            .stroke(availableMoods.contains(emoji) ? Color.green : Color.clear, lineWidth: 2)
+                                    )
+                            }
+                        }
+                    }
+                    .padding()
+                }
+                .frame(maxHeight: 400)
             }
+            .frame(maxWidth: 350)
+            .background(Color(.systemBackground))
+            .cornerRadius(20)
+            .shadow(color: .black.opacity(0.3), radius: 20)
         }
     }
 }
@@ -186,18 +238,14 @@ struct FlowerIcon: View {
     var body: some View {
         ZStack {
             ForEach(0..<8) { index in
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 15)
                     .fill(purpleShades[index])
-                    .frame(width: 32, height: 38)
+                    .frame(width: 32, height: 40).padding(5)
                     .offset(y: -20)
                     .rotationEffect(.degrees(Double(index) * 45))
             }
             
             if isRecording {
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 20, height: 20)
-                
                 Circle()
                     .stroke(Color.vibrantPurple, lineWidth: 2)
                     .frame(width: 28, height: 28)
@@ -331,16 +379,17 @@ struct HeaderView: View {
             Spacer()
         }
         .padding(.horizontal, 24)
-        .padding(.top, 60)
+        .padding(.top, 10)
     }
 }
 
 struct MoodSelectorView: View {
     let moods: [String]
     @Binding var selectedMood: String
+    @Binding var showEmojiPicker: Bool
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             Text("How are you feeling?")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
@@ -353,19 +402,41 @@ struct MoodSelectorView: View {
                             selectedMood = mood
                         }) {
                             Text(mood)
-                                .font(.system(size: 40))
+                                .font(.system(size: 34))
                                 .padding(12)
                                 .background(
                                     Circle()
-                                        .fill(selectedMood == mood ? Color.vibrantPurple.opacity(0.15) : Color.clear)
+                                        .fill(selectedMood == mood ? Color.purple.opacity(0.2) : Color.clear)
                                 )
-                                .scaleEffect(selectedMood == mood ? 1.15 : 1.0)
+                                .scaleEffect(selectedMood == mood ? 1.2 : 1.0)
+                                .animation(.spring(), value: selectedMood)
                         }
                     }
+                    
+                 
+                    Button(action: {
+                        showEmojiPicker = true
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 34))
+                            .foregroundColor(.vibrantPurple)
+                            .padding(12)
+                            .background(
+                                Circle()
+                                    .fill(Color.purple.opacity(0.1))
+                            )
+                    }
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 16)
             }
+            .frame(height: 65)
         }
-        .padding(.vertical, 8)
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.purple.opacity(0.1))
+                .shadow(color: Color.purple.opacity(0.2), radius: 8, x: 0, y: 4)
+        )
+        .padding(.horizontal, 24)
     }
 }

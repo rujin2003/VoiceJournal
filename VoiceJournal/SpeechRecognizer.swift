@@ -64,7 +64,6 @@ class SpeechRecognizer: NSObject, ObservableObject, SFSpeechRecognizerDelegate {
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer, when) in
             self.recognitionRequest?.append(buffer)
             
-            // Calculate audio level
             if let channelData = buffer.floatChannelData {
                 let channelDataValue = UnsafeBufferPointer(start: channelData[0], count: Int(buffer.frameLength))
                 let rms = sqrt(channelDataValue.reduce(0) { $0 + $1 * $1 } / Float(buffer.frameLength))
