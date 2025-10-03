@@ -400,6 +400,9 @@
 				DEVELOPMENT_TEAM = C7RX29D33F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VoiceJournal/Info.plist;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "VoiceJournal needs microphone access to record your voice entries.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "VoiceJournal uses speech recognition to transcribe your recordings to text.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -428,6 +431,9 @@
 				DEVELOPMENT_TEAM = C7RX29D33F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VoiceJournal/Info.plist;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "VoiceJournal needs microphone access to record your voice entries.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "VoiceJournal uses speech recognition to transcribe your recordings to text.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct VoiceJournalApp: App {
@@ -13,5 +14,6 @@ struct VoiceJournalApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: JournalNote.self)
     }
 }

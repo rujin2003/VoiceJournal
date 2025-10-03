@@ -5,62 +5,70 @@
 //  Created by Rujin Devkota on 10/3/25.
 //
 import SwiftUI
+import SwiftData
 
 struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
+    @Query(sort: \JournalNote.createdAt, order: .reverse) private var notes: [JournalNote]
+    
     @State private var selectedDate: Date = Date()
     private let rulerItemHeight: CGFloat = 90
     
     var body: some View {
-        ZStack {
-            LinearGradient(colors: [.appBackgroundStart, .appBackgroundEnd], startPoint: .topLeading, endPoint: .bottomTrailing)
-                .ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                HStack {
-                    Text("Your Journey")
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundColor(.black)
-                    Spacer()
-                    Button(action: {}) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.vibrantPurple)
+        NavigationView {
+            ZStack {
+                LinearGradient(colors: [.appBackgroundStart, .appBackgroundEnd], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    .ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Your Journey")
+                            .font(.system(size: 26, weight: .bold))
+                            .foregroundColor(.black)
+                        Spacer()
+                        NavigationLink(destination: JournalView()) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(.vibrantPurple)
+                        }
                     }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                
-                StreakCardView(
-                    currentStreak: viewModel.currentStreak,
-                    longestStreak: viewModel.longestStreak,
-                    totalEntries: viewModel.totalEntries
-                )
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                
-                GeometryReader { geo in
-                    HStack(spacing: 12) {
-                        TimelineRulerView(
-                            viewModel: viewModel,
-                            selectedDate: $selectedDate,
-                            itemHeight: rulerItemHeight,
-                            containerHeight: geo.size.height
-                        )
-                        .frame(width: 100)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
                         
-                        JournalCardsDisplayView(
-                            entries: viewModel.entriesForDate(selectedDate),
-                            selectedDate: selectedDate,
-                            containerHeight: geo.size.height
-                        )
+                    StreakCardView(
+                        currentStreak: viewModel.currentStreak,
+                        longestStreak: viewModel.longestStreak,
+                        totalEntries: viewModel.totalEntries(from: notes)
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                        
+                    GeometryReader { geo in
+                        HStack(spacing: 12) {
+                            TimelineRulerView(
+                                viewModel: viewModel,
+                                notes: notes,
+                                selectedDate: $selectedDate,
+                                itemHeight: rulerItemHeight,
+                                containerHeight: geo.size.height
+                            )
+                            .frame(width: 100)
+                            
+                            JournalCardsDisplayView(
+                                entries: viewModel.entriesForDate(selectedDate, in: notes),
+                                selectedDate: selectedDate,
+                                containerHeight: geo.size.height
+                            )
+                        }
+                        .padding(.horizontal, 8)
                     }
-                    .padding(.horizontal, 8)
                 }
             }
         }
     }
 }
+
+// MARK: - Subviews
 
 struct StreakCardView: View {
     let currentStreak: Int
@@ -69,30 +77,11 @@ struct StreakCardView: View {
     
     var body: some View {
         HStack(spacing: 10) {
-            StreakItemView(
-                icon: "flame.fill",
-                value: "\(currentStreak)",
-                label: "Day Streak",
-                color: .vibrantOrange,
-                isLarge: true
-            )
+            StreakItemView(icon: "flame.fill", value: "\(currentStreak)", label: "Day Streak", color: .vibrantOrange, isLarge: true)
             
             VStack(spacing: 10) {
-                StreakItemView(
-                    icon: "star.fill",
-                    value: "\(longestStreak)",
-                    label: "Longest",
-                    color: .vibrantGold,
-                    isLarge: false
-                )
-                
-                StreakItemView(
-                    icon: "book.fill",
-                    value: "\(totalEntries)",
-                    label: "Entries",
-                    color: .vibrantTeal,
-                    isLarge: false
-                )
+                StreakItemView(icon: "star.fill", value: "\(longestStreak)", label: "Longest", color: .vibrantGold, isLarge: false)
+                StreakItemView(icon: "book.fill", value: "\(totalEntries)", label: "Entries", color: .vibrantTeal, isLarge: false)
             }
         }
     }
@@ -139,6 +128,7 @@ struct StreakItemView: View {
 
 struct TimelineRulerView: View {
     @ObservedObject var viewModel: HomeViewModel
+    let notes: [JournalNote]
     @Binding var selectedDate: Date
     let itemHeight: CGFloat
     let containerHeight: CGFloat
@@ -148,13 +138,7 @@ struct TimelineRulerView: View {
             ZStack {
                 VStack {
                     Rectangle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(red: 0.7, green: 0.65, blue: 0.85).opacity(0.8), Color(red: 0.7, green: 0.65, blue: 0.85).opacity(0.3)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
+                        .fill(LinearGradient(colors: [Color(red: 0.7, green: 0.65, blue: 0.85).opacity(0.8), Color(red: 0.7, green: 0.65, blue: 0.85).opacity(0.3)], startPoint: .top, endPoint: .bottom))
                         .frame(width: 3)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -163,15 +147,15 @@ struct TimelineRulerView: View {
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
                         LazyVStack(spacing: 0) {
-                            ForEach(viewModel.allDatesFromToday, id: \.self) { date in
+                            ForEach(viewModel.allDatesFromToday(from: notes), id: \.self) { date in
                                 TimelineItemView(
                                     date: date,
                                     isSelected: Calendar.current.isDate(date, inSameDayAs: selectedDate),
-                                    hasEntries: viewModel.hasEntries(for: date),
-                                    entryCount: viewModel.entriesForDate(date).count
+                                    hasEntries: viewModel.hasEntries(for: date, in: notes),
+                                    entryCount: viewModel.entriesForDate(date, in: notes).count
                                 )
                                 .frame(height: itemHeight)
-                                .id(date)
+                                .id(Calendar.current.startOfDay(for: date))
                                 .background(
                                     GeometryReader { itemGeo in
                                         Color.clear.preference(
@@ -190,13 +174,13 @@ struct TimelineRulerView: View {
                     }
                     .onAppear {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            proxy.scrollTo(Date(), anchor: .top)
+                            proxy.scrollTo(Calendar.current.startOfDay(for: Date()), anchor: .top)
                         }
                     }
                 }
                 
                 VStack {
-                    Image("journalicon")
+                    Image("journalicon") // Make sure this image is in your Assets
                         .resizable()
                         .scaledToFit()
                         .frame(width: 28, height: 28)
@@ -207,32 +191,19 @@ struct TimelineRulerView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.leading, 16)
                 .frame(maxHeight: .infinity, alignment: .top)
-
             }
         }
     }
     
     private func updateSelectedDate(from positions: [Date: CGFloat]) {
         let selectionY = itemHeight / 2
-        var closestDate: Date?
-        var minDistance: CGFloat = .infinity
+        guard let closest = positions.min(by: { abs($0.value - selectionY) < abs($1.value - selectionY) }) else { return }
         
-        for (date, y) in positions {
-            let distance = abs(y - selectionY)
-            if distance < minDistance {
-                minDistance = distance
-                closestDate = date
-            }
-        }
-        
-        if let newDate = closestDate, !Calendar.current.isDate(newDate, inSameDayAs: selectedDate) {
+        if !Calendar.current.isDate(closest.key, inSameDayAs: selectedDate) {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                selectedDate = newDate
+                selectedDate = closest.key
             }
-            #if os(iOS)
-            let generator = UIImpactFeedbackGenerator(style: .medium)
-            generator.impactOccurred()
-            #endif
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         }
     }
 }
@@ -242,10 +213,6 @@ struct TimelineItemView: View {
     let isSelected: Bool
     let hasEntries: Bool
     let entryCount: Int
-    
-    private var isToday: Bool {
-        Calendar.current.isDateInToday(date)
-    }
     
     var body: some View {
         HStack(spacing: 0) {
@@ -266,7 +233,6 @@ struct TimelineItemView: View {
                     .foregroundColor(.secondary.opacity(0.8))
             }
             .padding(.leading, 6)
-            
             Spacer()
         }
         .scaleEffect(isSelected ? 1.08 : 1.0)
@@ -275,69 +241,14 @@ struct TimelineItemView: View {
 }
 
 struct JournalCardsDisplayView: View {
-    let entries: [JournalEntry]
+    let entries: [JournalNote]
     let selectedDate: Date
     let containerHeight: CGFloat
-    
-    private var isToday: Bool {
-        Calendar.current.isDateInToday(selectedDate)
-    }
     
     var body: some View {
         ScrollView(showsIndicators: false) {
             if entries.isEmpty {
-                VStack(spacing: 16) {
-                    if isToday {
-                        ZStack {
-                            Circle()
-                                .fill(LinearGradient(colors: [Color.vibrantPurple.opacity(0.2), Color.vibrantTeal.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                .frame(width: 120, height: 120)
-                            
-                            Image(systemName: "pencil.circle.fill")
-                                .font(.system(size: 70))
-                                .foregroundColor(.vibrantPurple)
-                        }
-                        
-                        Text("Please journal today")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundColor(.primary)
-                        
-                        Text("Start capturing your thoughts")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(.secondary)
-                        
-                        Button(action: {}) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "plus.circle.fill")
-                                Text("Create Entry")
-                            }
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 14)
-                            .background(
-                                Capsule().fill(
-                                    LinearGradient(colors: [.vibrantPurple, .vibrantTeal], startPoint: .leading, endPoint: .trailing)
-                                )
-                            )
-                        }
-                        .padding(.top, 8)
-                    } else {
-                        Image(systemName: "book.closed")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray.opacity(0.3))
-                        
-                        Text("No entries")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.secondary)
-                        
-                        Text(selectedDate, format: .dateTime.month().day().year())
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary.opacity(0.7))
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: containerHeight)
+                EmptyStateView(selectedDate: selectedDate, containerHeight: containerHeight)
             } else {
                 LazyVStack(spacing: 16) {
                     ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
@@ -353,7 +264,7 @@ struct JournalCardsDisplayView: View {
 }
 
 struct JournalCardView: View {
-    let entry: JournalEntry
+    let entry: JournalNote
     let index: Int
     @State private var isVisible = false
     
@@ -376,7 +287,7 @@ struct JournalCardView: View {
                 Spacer()
             }
             
-            Text(entry.content)
+            Text(entry.plainTextPreview)
                 .font(.system(size: 15))
                 .foregroundColor(.secondary)
                 .lineLimit(4)
@@ -395,6 +306,44 @@ struct JournalCardView: View {
                 isVisible = true
             }
         }
+    }
+}
+
+struct EmptyStateView: View {
+    let selectedDate: Date
+    let containerHeight: CGFloat
+    private var isToday: Bool { Calendar.current.isDateInToday(selectedDate) }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            if isToday {
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(colors: [Color.vibrantPurple.opacity(0.2), Color.vibrantTeal.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 120, height: 120)
+                    Image(systemName: "pencil.circle.fill")
+                        .font(.system(size: 70))
+                        .foregroundColor(.vibrantPurple)
+                }
+                Text("Please journal today")
+                    .font(.system(size: 22, weight: .bold))
+                Text("Start capturing your thoughts")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(.secondary)
+            } else {
+                Image(systemName: "book.closed")
+                    .font(.system(size: 60))
+                    .foregroundColor(.gray.opacity(0.3))
+                Text("No entries")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.secondary)
+                Text(selectedDate, format: .dateTime.month().day().year())
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary.opacity(0.7))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: containerHeight)
     }
 }
 
