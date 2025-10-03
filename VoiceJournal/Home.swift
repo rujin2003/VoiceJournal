@@ -550,7 +550,7 @@ struct JournalCardView: View {
                     }
                 }
                 .frame(width: 80)
-            }
+            } .opacity((isSwiping || offset < 0) ? 1 : 0)
         )
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .simultaneousGesture(
